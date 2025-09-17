@@ -1,0 +1,36 @@
+# 基础依赖 - 从 pyproject.toml 生成
+# 运行: uv pip compile pyproject.toml -o requirements.txt
+
+# Web框架
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+
+# 用户认证
+fastapi-users[sqlalchemy]>=12.1.0
+fastapi-users-db-sqlalchemy>=6.0.0
+
+# 数据库相关
+sqlalchemy>=2.0.0
+alembic>=1.12.0
+psycopg2-binary>=2.9.0
+asyncpg>=0.29.0
+
+# 配置管理
+pydantic>=2.4.0
+pydantic-settings>=2.0.0
+python-dotenv>=1.0.0
+
+# 工具库
+python-jose[cryptography]>=3.3.0
+passlib[bcrypt]>=1.7.4
+python-multipart>=0.0.6
+
+# Redis支持
+redis>=5.0.0
+celery>=5.3.0
+
+# 数据验证和序列化
+email-validator>=2.0.0
+
+# HTTP客户端
+httpx>=0.25.0
