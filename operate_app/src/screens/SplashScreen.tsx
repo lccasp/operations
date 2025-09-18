@@ -19,12 +19,14 @@ const SplashScreen: React.FC = () => {
   // 使用 ref 来防止重复执行
   const hasNavigated = useRef(false);
   const [isInitialized, setIsInitialized] = useState(false);
+  const initializationStarted = useRef(false);
 
   useEffect(() => {
-    // 如果已经导航过，直接返回
-    if (hasNavigated.current) {
+    // 防止重复初始化
+    if (initializationStarted.current || hasNavigated.current) {
       return;
     }
+    initializationStarted.current = true;
 
     const initializeApp = async () => {
       console.log('[SplashScreen] Starting app initialization...');
@@ -39,7 +41,7 @@ const SplashScreen: React.FC = () => {
     initializeApp();
   }, []);
 
-  // 在状态初始化完成后处理导航
+  // 在状态初始化完成后处理导航 - 使用缓存的依赖项
   useEffect(() => {
     if (!isInitialized || hasNavigated.current) {
       return;
@@ -48,7 +50,7 @@ const SplashScreen: React.FC = () => {
     const navigateToNextScreen = async () => {
       console.log('[SplashScreen] Auth state:', { isAuthenticated, onboardingCompleted });
       
-      // 设置已导航标志
+      // 设置已导航标志，防止重复导航
       hasNavigated.current = true;
       
       // 额外等待时间确保用户看到启动页
@@ -70,12 +72,18 @@ const SplashScreen: React.FC = () => {
         }
       } catch (error) {
         console.error('[SplashScreen] Navigation error:', error);
+        // 出错时回退到认证页面
         navigation.replace('Auth');
       }
     };
 
-    navigateToNextScreen();
-  }, [isInitialized, isAuthenticated, onboardingCompleted, navigation, setOnboardingCompleted]);
+    // 使用setTimeout避免直接在useEffect中进行状态更新
+    const timeoutId = setTimeout(navigateToNextScreen, 100);
+    
+    return () => {
+      clearTimeout(timeoutId);
+    };
+  }, [isInitialized]); // 只依赖于isInitialized，其他状态通过闭包捕获
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.primary }]}>

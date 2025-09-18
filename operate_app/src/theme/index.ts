@@ -3,6 +3,7 @@
  * 整合所有主题配置，提供统一的主题接口
  */
 
+import React from 'react';
 import { useColorScheme } from 'react-native';
 
 // 简化的颜色定义（避免循环依赖）
@@ -199,10 +200,25 @@ export const createTheme = (colorScheme: 'light' | 'dark'): Theme => {
   };
 };
 
+// 缓存主题对象以避免重复创建
+const themeCache = new Map<string, Theme>();
+
 // 获取当前主题的 Hook
 export const useTheme = (): Theme => {
   const colorScheme = useColorScheme() ?? 'light';
-  return createTheme(colorScheme);
+  
+  // 使用useMemo和缓存机制，避免每次渲染都创建新对象
+  return React.useMemo(() => {
+    const cacheKey = colorScheme;
+    
+    if (themeCache.has(cacheKey)) {
+      return themeCache.get(cacheKey)!;
+    }
+    
+    const theme = createTheme(colorScheme);
+    themeCache.set(cacheKey, theme);
+    return theme;
+  }, [colorScheme]);
 };
 
 // 默认主题

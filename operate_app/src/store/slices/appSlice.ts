@@ -197,17 +197,20 @@ export const createAppSlice: StateCreator<
       state.app.notifications.push(newNotification);
     });
 
-    // 自动隐藏通知
-    if (notification.duration !== undefined && notification.duration > 0) {
+    // 使用requestAnimationFrame延迟设置定时器，避免在render期间执行
+    requestAnimationFrame(() => {
+      const duration = notification.duration !== undefined && notification.duration > 0 
+        ? notification.duration 
+        : 5000;
+      
       setTimeout(() => {
-        get().hideNotification(id);
-      }, notification.duration);
-    } else {
-      // 默认 5 秒后隐藏
-      setTimeout(() => {
-        get().hideNotification(id);
-      }, 5000);
-    }
+        // 检查通知是否仍然存在再隐藏
+        const currentNotifications = get().app.notifications;
+        if (currentNotifications.some(n => n.id === id)) {
+          get().hideNotification(id);
+        }
+      }, duration);
+    });
   },
 
   // 隐藏通知

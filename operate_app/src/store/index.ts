@@ -7,6 +7,7 @@ import { create } from 'zustand';
 import { subscribeWithSelector, devtools } from 'zustand/middleware';
 import { immer } from 'zustand/middleware/immer';
 import { persist, createJSONStorage } from 'zustand/middleware';
+import { shallow } from 'zustand/shallow';
 
 import { appStorage } from '../utils/storage';
 import { createAuthSlice, type AuthSlice } from './slices/authSlice';
@@ -85,45 +86,71 @@ export const useStore = create<RootState>()(
   )
 );
 
+// 创建稳定的选择器函数来避免无限重渲染
+const selectAuth = (state: RootState) => state.auth;
+const selectApp = (state: RootState) => state.app;
+const selectUser = (state: RootState) => state.user;
+
 // 选择器 Hooks（性能优化）
-export const useAuth = () => useStore((state) => state.auth);
-export const useApp = () => useStore((state) => state.app);
-export const useUser = () => useStore((state) => state.user);
+export const useAuth = () => useStore(selectAuth);
+export const useApp = () => useStore(selectApp);
+export const useUser = () => useStore(selectUser);
 
-// 操作方法选择器（使用回调缓存避免无限重渲染）
-const authActionsSelector = (state: RootState) => ({
-  login: state.login,
-  logout: state.logout,
-  register: state.register,
-  refreshToken: state.refreshToken,
-  updateUser: state.updateUser,
-  initializeAuth: state.initializeAuth,
-  clearError: state.clearError,
-  setLoading: state.setLoading,
-  resetLoginAttempts: state.resetLoginAttempts,
-});
+// 缓存操作方法对象以避免重复创建
+let cachedAuthActions: any = null;
+let cachedAppActions: any = null;
+let cachedUserActions: any = null;
 
-const appActionsSelector = (state: RootState) => ({
-  setTheme: state.setTheme,
-  setLanguage: state.setLanguage,
-  updateSettings: state.updateSettings,
-  setOnboardingCompleted: state.setOnboardingCompleted,
-  showNotification: state.showNotification,
-  hideNotification: state.hideNotification,
-  setOnlineStatus: state.setOnlineStatus,
-  setAppState: state.setAppState,
-});
+// 创建稳定的操作方法选择器（缓存函数引用）
+const authActionsSelector = (state: RootState) => {
+  if (!cachedAuthActions) {
+    cachedAuthActions = {
+      login: state.login,
+      logout: state.logout,
+      register: state.register,
+      refreshToken: state.refreshToken,
+      updateUser: state.updateUser,
+      initializeAuth: state.initializeAuth,
+      clearError: state.clearError,
+      setLoading: state.setLoading,
+      resetLoginAttempts: state.resetLoginAttempts,
+    };
+  }
+  return cachedAuthActions;
+};
 
-const userActionsSelector = (state: RootState) => ({
-  updateProfile: state.updateProfile,
-  updatePreferences: state.updatePreferences,
-  addToFavorites: state.addToFavorites,
-  removeFromFavorites: state.removeFromFavorites,
-});
+const appActionsSelector = (state: RootState) => {
+  if (!cachedAppActions) {
+    cachedAppActions = {
+      setTheme: state.setTheme,
+      setLanguage: state.setLanguage,
+      updateSettings: state.updateSettings,
+      setOnboardingCompleted: state.setOnboardingCompleted,
+      showNotification: state.showNotification,
+      hideNotification: state.hideNotification,
+      setOnlineStatus: state.setOnlineStatus,
+      setAppState: state.setAppState,
+    };
+  }
+  return cachedAppActions;
+};
 
-export const useAuthActions = () => useStore(authActionsSelector);
-export const useAppActions = () => useStore(appActionsSelector);
-export const useUserActions = () => useStore(userActionsSelector);
+const userActionsSelector = (state: RootState) => {
+  if (!cachedUserActions) {
+    cachedUserActions = {
+      updateProfile: state.updateProfile,
+      updatePreferences: state.updatePreferences,
+      addToFavorites: state.addToFavorites,
+      removeFromFavorites: state.removeFromFavorites,
+    };
+  }
+  return cachedUserActions;
+};
+
+// 使用浅比较避免无限重渲染
+export const useAuthActions = () => useStore(authActionsSelector, shallow);
+export const useAppActions = () => useStore(appActionsSelector, shallow);
+export const useUserActions = () => useStore(userActionsSelector, shallow);
 
 // 状态重置（用于测试或清理）
 export const resetStore = () => {

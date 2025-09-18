@@ -4,7 +4,7 @@
  */
 
 import React, { useEffect } from 'react';
-import { StatusBar, Platform } from 'react-native';
+import { StatusBar, Platform, View, Text } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator, TransitionPresets } from '@react-navigation/stack';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
@@ -33,6 +33,24 @@ const getNavigationTheme = (theme: any) => ({
     text: theme.colors.text.primary,
     border: theme.colors.border.secondary,
     notification: theme.colors.error,
+  },
+  fonts: {
+    regular: {
+      fontFamily: 'System',
+      fontWeight: 'normal',
+    },
+    medium: {
+      fontFamily: 'System',
+      fontWeight: '500',
+    },
+    light: {
+      fontFamily: 'System',
+      fontWeight: '300',
+    },
+    thin: {
+      fontFamily: 'System',
+      fontWeight: '100',
+    },
   },
 });
 
@@ -68,18 +86,56 @@ export const RootNavigator: React.FC = () => {
   const { onboardingCompleted, appState } = useApp();
   const { initializeAuth } = useAuthActions();
   
-  console.log('[RootNavigator] Auth state:', { isAuthenticated, onboardingCompleted });
+  const [isInitialized, setIsInitialized] = React.useState(false);
+  const initTimeoutRef = React.useRef<NodeJS.Timeout>();
+  const initializationStarted = React.useRef(false);
+  
+  console.log('[RootNavigator] Auth state:', { isAuthenticated, onboardingCompleted, isInitialized });
 
-  // 初始化认证状态
+  // 初始化认证状态 - 只执行一次
   useEffect(() => {
-    console.log('[RootNavigator] Initializing auth...');
-    try {
-      initializeAuth();
-      console.log('[RootNavigator] Auth initialization completed');
-    } catch (error) {
-      console.error('[RootNavigator] Auth initialization failed:', error);
+    // 防止重复初始化
+    if (initializationStarted.current) {
+      return;
     }
-  }, [initializeAuth]);
+    initializationStarted.current = true;
+    
+    console.log('[RootNavigator] Initializing auth...');
+    
+    const initializeWithTimeout = async () => {
+      try {
+        // 等待一小段时间确保React Native完全准备好
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        initializeAuth();
+        console.log('[RootNavigator] Auth initialization completed');
+        
+        // 设置超时以防止无限等待
+        initTimeoutRef.current = setTimeout(() => {
+          console.log('[RootNavigator] Initialization timeout, proceeding anyway...');
+          if (!isInitialized) {
+            setIsInitialized(true);
+          }
+        }, 3000);
+        
+        // 延迟设置初始化完成状态
+        setTimeout(() => {
+          setIsInitialized(true);
+        }, 500);
+      } catch (error) {
+        console.error('[RootNavigator] Auth initialization failed:', error);
+        setIsInitialized(true); // 即使失败也要继续
+      }
+    };
+    
+    initializeWithTimeout();
+    
+    return () => {
+      if (initTimeoutRef.current) {
+        clearTimeout(initTimeoutRef.current);
+      }
+    };
+  }, []); // 确保只在组件挂载时运行一次
 
   // 状态栏配置
   useEffect(() => {
@@ -111,6 +167,28 @@ export const RootNavigator: React.FC = () => {
     // 默认显示启动页，让启动页处理导航逻辑
     return 'Splash';
   };
+
+  // 如果还未初始化，显示简单的加载界面
+  if (!isInitialized) {
+    return (
+      <SafeAreaProvider>
+        <View style={{ 
+          flex: 1, 
+          justifyContent: 'center', 
+          alignItems: 'center', 
+          backgroundColor: theme.colors.background.primary 
+        }}>
+          <Text style={{ 
+            color: theme.colors.text.primary, 
+            fontSize: 16,
+            marginBottom: 20
+          }}>
+            正在初始化...
+          </Text>
+        </View>
+      </SafeAreaProvider>
+    );
+  }
 
   console.log('[RootNavigator] About to render NavigationContainer...');
 

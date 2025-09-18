@@ -133,23 +133,24 @@ export const MainNavigator: React.FC = () => {
       screenOptions={{
         headerShown: false,
         tabBarStyle: {
-          backgroundColor: theme.colors.background.card,
-          borderTopColor: theme.colors.border.secondary,
-          borderTopWidth: theme.borderWidth.hairline,
+          backgroundColor: theme.colors?.background?.card || '#FFFFFF',
+          borderTopColor: theme.colors?.border?.secondary || '#E5E5EA',
+          borderTopWidth: 0.5,
           paddingBottom: Platform.OS === 'ios' ? 20 : 5,
           height: Platform.OS === 'ios' ? 90 : 65,
-          ...theme.componentShadows.tabBar,
         },
-        tabBarActiveTintColor: theme.colors.primary,
-        tabBarInactiveTintColor: theme.colors.text.secondary,
+        tabBarActiveTintColor: theme.colors?.primary || '#007AFF',
+        tabBarInactiveTintColor: theme.colors?.text?.secondary || '#8E8E93',
         tabBarLabelStyle: {
-          fontSize: theme.typography.caption.fontSize,
+          fontSize: 12,
           fontWeight: '500',
           marginTop: 4,
+          fontFamily: 'System',
         },
         tabBarIconStyle: {
           marginTop: 4,
         },
+        tabBarLabelPosition: 'below-icon',
       }}
     >
       <Tab.Screen

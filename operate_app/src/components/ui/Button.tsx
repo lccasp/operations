@@ -12,15 +12,16 @@ import {
   ViewStyle,
   TextStyle,
   Platform,
+  View,
 } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withSpring,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
-import { Gesture, GestureDetector } from 'react-native-gesture-handler';
+// import Animated, {
+//   useSharedValue,
+//   useAnimatedStyle,
+//   withSpring,
+//   withTiming,
+//   runOnJS,
+// } from 'react-native-reanimated';
+// import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import * as Haptics from 'react-native-haptic-feedback';
 
 import { useTheme } from '../../theme';
@@ -75,8 +76,8 @@ export interface ButtonProps {
   children?: React.ReactNode;
 }
 
-// 动画按钮组件
-const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
+// 简化版本按钮组件（临时移除动画）
+// const AnimatedTouchableOpacity = Animated.createAnimatedComponent(TouchableOpacity);
 
 export const Button: React.FC<ButtonProps> = ({
   title,
@@ -96,10 +97,6 @@ export const Button: React.FC<ButtonProps> = ({
   children,
 }) => {
   const theme = useTheme();
-  
-  // 动画值
-  const scale = useSharedValue(1);
-  const opacity = useSharedValue(1);
   
   // 触觉反馈
   const triggerHapticFeedback = useCallback(() => {
@@ -123,50 +120,20 @@ export const Button: React.FC<ButtonProps> = ({
     }
   }, [hapticFeedback, disabled]);
 
-  // 按下手势
-  const pressGesture = Gesture.Tap()
-    .onBegin(() => {
-      if (!disabled && !loading) {
-        scale.value = withSpring(0.95, {
-          damping: 15,
-          stiffness: 300,
-        });
-        opacity.value = withTiming(0.8, { duration: 100 });
-      }
-    })
-    .onFinalize((event) => {
-      if (!disabled && !loading) {
-        scale.value = withSpring(1, {
-          damping: 15,
-          stiffness: 300,
-        });
-        opacity.value = withTiming(1, { duration: 100 });
-        
-        if (event.state === 4) { // ENDED
-          runOnJS(triggerHapticFeedback)();
-          onPress && runOnJS(onPress)();
-        }
-      }
-    });
+  // 简化的按钮按下处理
+  const handlePress = useCallback(() => {
+    if (!disabled && !loading) {
+      triggerHapticFeedback();
+      onPress?.();
+    }
+  }, [disabled, loading, triggerHapticFeedback, onPress]);
 
-  // 长按手势
-  const longPressGesture = Gesture.LongPress()
-    .minDuration(500)
-    .onStart(() => {
-      if (!disabled && !loading && onLongPress) {
-        runOnJS(triggerHapticFeedback)();
-        runOnJS(onLongPress)();
-      }
-    });
-
-  // 组合手势
-  const gesture = Gesture.Race(pressGesture, longPressGesture);
-
-  // 动画样式
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: scale.value }],
-    opacity: opacity.value,
-  }));
+  const handleLongPress = useCallback(() => {
+    if (!disabled && !loading && onLongPress) {
+      triggerHapticFeedback();
+      onLongPress();
+    }
+  }, [disabled, loading, onLongPress, triggerHapticFeedback]);
 
   // 获取按钮样式
   const buttonStyles = getButtonStyles(theme, variant, size, fullWidth, disabled);
@@ -177,13 +144,13 @@ export const Button: React.FC<ButtonProps> = ({
     if (!icon) return null;
     
     return (
-      <Animated.View style={[
+      <View style={[
         styles.iconContainer,
         iconPosition === 'left' && title ? styles.iconLeft : undefined,
         iconPosition === 'right' && title ? styles.iconRight : undefined,
       ]}>
         {icon}
-      </Animated.View>
+      </View>
     );
   };
 
@@ -221,23 +188,22 @@ export const Button: React.FC<ButtonProps> = ({
   };
 
   return (
-    <GestureDetector gesture={gesture}>
-      <AnimatedTouchableOpacity
-        style={[
-          buttonStyles,
-          animatedStyle,
-          style,
-        ]}
-        activeOpacity={1} // 由手势处理不透明度
-        disabled={disabled || loading}
-        testID={testID}
-        accessibilityRole="button"
-        accessibilityState={{ disabled: disabled || loading }}
-        accessibilityLabel={title}
-      >
-        {renderContent()}
-      </AnimatedTouchableOpacity>
-    </GestureDetector>
+    <TouchableOpacity
+      style={[
+        buttonStyles,
+        style,
+      ]}
+      activeOpacity={0.8}
+      disabled={disabled || loading}
+      onPress={handlePress}
+      onLongPress={handleLongPress}
+      testID={testID}
+      accessibilityRole="button"
+      accessibilityState={{ disabled: disabled || loading }}
+      accessibilityLabel={title}
+    >
+      {renderContent()}
+    </TouchableOpacity>
   );
 };
 
@@ -253,25 +219,25 @@ const getButtonStyles = (
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderRadius: theme.borderRadius.button,
-    ...theme.componentShadows.button.default,
+    borderRadius: theme.borderRadius?.button || 8,
+    ...(theme.componentShadows?.button?.default || {}),
   };
 
   // 尺寸样式
   const sizeStyles: ViewStyle = {
     small: {
-      paddingHorizontal: theme.componentSpacing.button.small.horizontal,
-      paddingVertical: theme.componentSpacing.button.small.vertical,
+      paddingHorizontal: theme.componentSpacing?.button?.small?.horizontal || 12,
+      paddingVertical: theme.componentSpacing?.button?.small?.vertical || 8,
       minHeight: 32,
     },
     medium: {
-      paddingHorizontal: theme.componentSpacing.button.horizontal,
-      paddingVertical: theme.componentSpacing.button.vertical,
+      paddingHorizontal: theme.componentSpacing?.button?.horizontal || 16,
+      paddingVertical: theme.componentSpacing?.button?.vertical || 12,
       minHeight: 44,
     },
     large: {
-      paddingHorizontal: theme.componentSpacing.button.large.horizontal,
-      paddingVertical: theme.componentSpacing.button.large.vertical,
+      paddingHorizontal: theme.componentSpacing?.button?.large?.horizontal || 20,
+      paddingVertical: theme.componentSpacing?.button?.large?.vertical || 16,
       minHeight: 56,
     },
   }[size];
@@ -289,7 +255,7 @@ const getButtonStyles = (
     },
     outline: {
       backgroundColor: 'transparent',
-      borderWidth: theme.borderWidth.regular,
+      borderWidth: theme.borderWidth?.regular || 1,
       borderColor: disabled ? theme.colors.text.disabled : theme.colors.border.primary,
     },
     ghost: {
@@ -331,11 +297,11 @@ const getTextStyles = (
     textAlign: 'center',
   };
 
-  // 尺寸文本样式
+  // 尺寸文本样式 - 添加安全检查
   const sizeStyles: TextStyle = {
-    small: theme.fontCombinations.button.small,
-    medium: theme.fontCombinations.button.medium,
-    large: theme.fontCombinations.button.large,
+    small: theme.fontCombinations?.button?.small || { fontSize: 14, fontWeight: '600' },
+    medium: theme.fontCombinations?.button?.medium || { fontSize: 16, fontWeight: '600' },
+    large: theme.fontCombinations?.button?.large || { fontSize: 18, fontWeight: '600' },
   }[size];
 
   // 变体文本样式
