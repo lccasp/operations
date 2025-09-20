@@ -164,10 +164,10 @@ export const createTheme = (colorScheme: 'light' | 'dark'): Theme => {
       },
       button: {
         default: {
-          shadowOffset: { width: 0, height: 1 },
-          shadowOpacity: 0.1,
-          shadowRadius: 2,
-          elevation: 2,
+          shadowOffset: { width: 0, height: 0 },
+          shadowOpacity: 0,
+          shadowRadius: 0,
+          elevation: 0,
         },
       },
     },

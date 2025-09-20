@@ -220,7 +220,6 @@ const getButtonStyles = (
     alignItems: 'center',
     justifyContent: 'center',
     borderRadius: theme.borderRadius?.button || 8,
-    ...(theme.componentShadows?.button?.default || {}),
   };
 
   // 尺寸样式
@@ -272,15 +271,11 @@ const getButtonStyles = (
   // 全宽样式
   const widthStyles: ViewStyle = fullWidth ? { alignSelf: 'stretch' } : {};
 
-  // 禁用时移除阴影
-  const shadowStyles = disabled ? { shadowOpacity: 0, elevation: 0 } : {};
-
   return {
     ...baseStyles,
     ...sizeStyles,
     ...variantStyles,
     ...widthStyles,
-    ...shadowStyles,
   };
 };
 
